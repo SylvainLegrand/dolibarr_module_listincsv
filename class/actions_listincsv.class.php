@@ -64,7 +64,7 @@ class ActionsListInCSV extends \listincsv\RetroCompatCommonHookActions
 
         global $db, $user;
 
-        if(GETPOSTISSET('exportlistincsv', 'bool') && method_exists($object, 'call_trigger')) {
+        if(GETPOSTISSET('exportlistincsv', 'bool') && is_object($object) && method_exists($object, 'call_trigger')) {
             $object->call_trigger('LISTINCSV_EXPORT_FILE_'.strtoupper($object->element), $user);
         }
 
@@ -103,6 +103,16 @@ class ActionsListInCSV extends \listincsv\RetroCompatCommonHookActions
 		if(empty($context_list)) {
 			$context_list = preg_grep('/(thirdpartycustomerprice)/i', $TContext);
 		}
+        if(empty($context_list)) {
+			$context_list = preg_grep('/(agefoddsessionsubscribers)/i', $TContext);
+		}
+
+        // Permettre à d'autres modules externes d'utiliser listInCSV
+        $parameters['context_list'] = &$context_list;
+        $reshook = $hookmanager->executeHooks('listInCSVFooterContext', $parameters);
+        if ($reshook < 0) {
+            setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+        }
 
         if (!empty($context_list))
         {
@@ -127,10 +137,14 @@ class ActionsListInCSV extends \listincsv\RetroCompatCommonHookActions
 
                     $(document).ready(function() {
                         <?php
-                        // Case fo tesk list into project
+                        // Case for task list into project
                         if (strpos($parameters['context'], 'projecttasklist') !== false) {
                         ?>
                         $('#id-right > form#searchFormList div.titre').first().append('<?php echo $download; ?>'); // Il peut y avoir plusieurs titre dans la page
+                        <?php
+                        } else if (strpos($parameters['context'], 'agefoddsessionsubscribers') !== false) {
+                        ?>
+                            $('div.fiche div.titre').eq(1).append('<?php echo $download; ?>'); // Il peut y avoir plusieurs titre dans la page
                         <?php
                         } else {
                         ?>
